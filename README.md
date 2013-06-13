@@ -9,7 +9,7 @@ In a sharded cluster of replica sets, which server or servers handle each of you
 
 You'll need a recent install of MongoDB (I'm using 2.4.4), Python, a recent version of PyMongo (at least 2.4--I'm using 2.5.2) and the code in THIS REPOSITORY. I assume a Mac, Linux, or Unix-y environment where commands like `killall` are available.
 
-GITHUB LINK
+https://github.com/ajdavis/cluster-profile
 
 ## Sharded cluster of replica sets
 
