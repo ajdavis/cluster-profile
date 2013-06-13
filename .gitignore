@@ -1,0 +1,13 @@
+/replset_1_5003/
+/replset_1_5002/
+/replset_1_5001/
+/replset_1_5000/
+/replset_0_4003/
+/replset_0_4002/
+/replset_0_4001/
+/replset_0_4000/
+mongos.log*
+/config_6003/
+/config_6002/
+/config_6001/
+/config_6000/
