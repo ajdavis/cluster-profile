@@ -134,12 +134,12 @@ def shard_collection():
 
 
 def main():
-    # response = raw_input(
-    #     'Clear local data directories and kill all mongod and mongos? [y/n]\n')
-    #
-    # if response.lower().strip() not in ('y', 'yes'):
-    #     print('Quitting.')
-    #     sys.exit(1)
+    response = raw_input(
+        'Clear local data directories and kill all mongod and mongos? [y/n]\n')
+
+    if response.lower().strip() not in ('y', 'yes'):
+        print('Quitting.')
+        sys.exit(1)
 
     setup_directories()
     setup_replica_sets()
