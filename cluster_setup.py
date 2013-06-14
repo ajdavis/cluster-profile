@@ -22,10 +22,6 @@ def setup_directories():
     for directory in all_dirs:
         shutil.rmtree(directory, ignore_errors=True)
 
-    command = 'killall mongod mongos'
-    print(command)
-    os.system(command)
-
     print 'Creating data directories....'
     for directory in all_dirs:
         os.mkdir(directory)
@@ -136,7 +132,7 @@ def shard_collection():
 
 def main():
     response = raw_input(
-        'Clear local data directories and kill all mongod and mongos? [y/n]\n')
+        'Clear local data directories? [y/n]\n')
 
     if response.lower().strip() not in ('y', 'yes'):
         print('Quitting.')
