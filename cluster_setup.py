@@ -131,9 +131,33 @@ def add_shards():
 def shard_collection():
     print('Sharding collection.')
     client = MongoClient()  # Connect to mongos.
-    client.admin.command('enableSharding', 'test')  # Shard the 'test' db.
-    client.admin.command(
+    admin = client.admin  # admin database.
+    admin.command('enableSharding', 'test')  # Shard the 'test' db.
+    admin.command(
         'shardCollection', 'test.sharded_collection', key={'shard_key': 1})
+
+    # Disable balancer.
+    client.config.settings.update(
+        {'_id': 'balancer'},
+        {' $set': {'stopped': True}},
+        upsert=True)
+
+    # Pre-split.
+    admin.command(
+        'split', 'test.sharded_collection',
+        middle={'shard_key': 500})
+
+    admin.command(
+        'moveChunk', 'test.sharded_collection',
+        find={'shard_key': 500},
+        to='replset_1')
+
+
+def insert_docs():
+    client = MongoClient()  # Connect to mongos.
+    collection = client.test.sharded_collection
+    collection.insert({'shard_key': 0})  # Goes to replset_0.
+    collection.insert({'shard_key': 500})  # Goes to replset_1.
 
 
 def main():
@@ -150,6 +174,7 @@ def main():
     start_mongos()
     add_shards()
     shard_collection()
+    insert_docs()
 
 
 if __name__ == '__main__':
