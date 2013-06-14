@@ -5,6 +5,7 @@ import sys
 from time import sleep
 
 from pymongo import MongoClient
+from pymongo.errors import OperationFailure
 
 
 replset_0_ports = range(4000, 4002 + 1)
@@ -69,14 +70,18 @@ def setup_replica_sets():
             break
 
         for client in clients:
-            status = client.admin.command('replSetGetStatus')
-            primary = [
-                member for member in status['members']
-                if member['stateStr'] == 'PRIMARY']
+            try:
+                status = client.admin.command('replSetGetStatus')
+            except OperationFailure:
+                pass
+            else:
+                primary = [
+                    member for member in status['members']
+                    if member['stateStr'] == 'PRIMARY']
 
-            if primary:
-                clients.remove(client)
-                break
+                if primary:
+                    clients.remove(client)
+                    break
 
         sleep(1)  # Try again in a second.
     else:
