@@ -9,6 +9,21 @@ try:
 except ImportError:
     import simplejson as json
 
+# Get list of terminal foreground colors if possible.
+try:
+    from colorama import Fore
+except ImportError:
+    Fore = None
+    colors = ['']
+else:
+    # Color names are like Fore.RED, Fore.BLUE, ....
+    colors = [
+        getattr(Fore, name) for name in dir(Fore)
+        if name.upper() == name
+        and not name.startswith('_')
+        and name not in ('BLACK', 'BLUE', 'RESET')]
+
+import bson
 from pymongo import MongoClient, ReadPreference
 
 
@@ -18,7 +33,7 @@ all_ports = replset_0_ports + replset_1_ports
 
 
 class Member(object):
-    def __init__(self, client):
+    def __init__(self, client, color):
         self.client = client
         ismaster = client.admin.command('ismaster')
         if ismaster.get('ismaster'):
@@ -27,17 +42,21 @@ class Member(object):
             self.state = 'secondary'
 
         self.replset_name = ismaster['setName']
+        self.color = color
 
 
 def connect():
     members = []
-    for port in all_ports:
+    for i, port in enumerate(all_ports):
         client = MongoClient(
             'localhost',
             port,
-            read_preference=ReadPreference.SECONDARY)
+            read_preference=ReadPreference.SECONDARY,  # Allow secondaries.
+            document_class=bson.SON                    # Preserve field order.
+        )
 
-        members.append(Member(client))
+        color = colors[i % len(colors)]
+        members.append(Member(client, color))
 
     return members
 
@@ -87,23 +106,35 @@ def tail_profiles(members):
 
                 while cursor.alive:
                     for doc in cursor:
+                        if doc.get('op') == 'query':
+                            ns = doc.get('ns', '')
+                            query = json.dumps(doc.get('query', {}))
+                            extra = '%s %s' % (ns, query)
+                        elif doc.get('op') == 'command':
+                            # This is why we had to set document_class=SON
+                            # above: command name is first field.
+                            command_name, arg = doc['command'].items()[0]
+                            extra = '%s: %s' % (command_name, arg)
+                        else:
+                            extra = ''
+
                         values = {
                             'replset_name': self.member.replset_name,
                             'state': self.member.state,
                             'port': self.member.client.port,
                             'op': doc.get('op', ''),
-                            'ns': doc.get('ns', ''),
-                            'query': json.dumps(doc.get('query', {})),
+                            'extra': extra,
                             'read_pref': doc.get('$read_preference', '')
                         }
+
                         message = (
                             '%(replset_name)s %(state)s on %(port)d:'
-                            ' %(op)s %(ns)s %(query)s %(read_pref)s\n'
+                            ' %(op)s %(extra)s %(read_pref)s\n'
                             % values)
 
                         # Unlike print(), this style avoids interleaving
                         # threads' output.
-                        sys.stdout.write(message)
+                        sys.stdout.write(self.member.color + message)
 
                 # Cursor died; e.g. if profile is empty.
                 sys.stdout.write('Cursor died\n')
