@@ -1,0 +1,134 @@
+#!/bin/env python
+import datetime
+import threading
+import sys
+from time import sleep
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
+from pymongo import MongoClient, ReadPreference
+
+
+replset_0_ports = range(4000, 4002 + 1)
+replset_1_ports = range(5000, 5002 + 1)
+replset_0_ports = [4000]
+replset_1_ports = []
+all_ports = replset_0_ports + replset_1_ports
+
+
+class Member(object):
+    def __init__(self, client):
+        self.client = client
+        ismaster = client.admin.command('ismaster')
+        if ismaster.get('ismaster'):
+            self.state = 'primary'
+        else:
+            self.state = 'secondary'
+
+        self.replset_name = ismaster['setName']
+
+
+def connect():
+    members = []
+    for port in all_ports:
+        client = MongoClient(
+            'localhost',
+            port,
+            read_preference=ReadPreference.SECONDARY)
+
+        members.append(Member(client))
+
+    return members
+
+
+def enable_profiling(members):
+    print('Turning on profiling.')
+    for member in members:
+        # Enable profiling on the 'test' database.
+        member.client.test.set_profiling_level(2)
+
+
+def tail_profiles(members):
+    class ProfileThread(threading.Thread):
+        def __init__(self, member):
+            super(ProfileThread, self).__init__()
+            self.setDaemon(True)
+            self.member = member
+
+        def run(self):
+            db = self.member.client.test
+            profile = db.system.profile
+
+            sys.stdout.write('Tailing %s on %s %s on %s\n' % (
+                profile,
+                self.member.replset_name,
+                self.member.state,
+                self.member.client.port))
+
+            latest_entries = list(
+                profile.find().sort([('$natural', -1)]).limit(1))
+
+            if latest_entries:
+                ts = latest_entries[0].get('ts', datetime.datetime.min)
+            else:
+                ts = datetime.datetime.min
+
+            while True:
+                # Make a tailable cursor. Filter out old entries, getMores,
+                # serverStatus, commands from mongos, and this query itself.
+                cursor = profile.find({
+                    'ts': {'$gt': ts},
+                    'op': {'$ne': 'getmore'},
+                    'command.serverStatus': {'$ne': 1},
+                    'ns': {'$nin': [
+                        'test.system.profile', 'test.system.indexes']},
+                }, tailable=True, await_data=True)
+
+                while cursor.alive:
+                    for doc in cursor:
+                        values = {
+                            'replset_name': self.member.replset_name,
+                            'state': self.member.state,
+                            'port': self.member.client.port,
+                            'op': doc.get('op', ''),
+                            'ns': doc.get('ns', ''),
+                            'query': json.dumps(doc.get('query', {})),
+                            'read_pref': doc.get('$read_preference', '')
+                        }
+                        message = (
+                            '%(replset_name)s %(state)s on %(port)d:'
+                            ' %(op)s %(ns)s %(query)s %(read_pref)s\n'
+                            % values)
+
+                        # Unlike print(), this style avoids interleaving
+                        # threads' output.
+                        sys.stdout.write(message)
+
+                # Cursor died; e.g. if profile is empty.
+                sys.stdout.write('Cursor died\n')
+                sleep(0.1)
+
+    threads = []
+    for member in members:
+        t = ProfileThread(member)
+        t.start()
+        threads.append(t)
+
+    while True:
+        try:
+            sleep(1)
+        except KeyboardInterrupt:
+            sys.exit(0)
+
+
+def main():
+    members = connect()
+    enable_profiling(members)
+    tail_profiles(members)
+
+
+if __name__ == '__main__':
+    main()
