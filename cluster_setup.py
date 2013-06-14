@@ -138,7 +138,7 @@ def shard_collection():
 
 def main():
     response = raw_input(
-        'Clear local data directories? [y/n]\n')
+        'Clear local data directories? [y/n] ')
 
     if response.lower().strip() not in ('y', 'yes'):
         print('Quitting.')
