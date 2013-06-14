@@ -14,8 +14,6 @@ from pymongo import MongoClient, ReadPreference
 
 replset_0_ports = range(4000, 4002 + 1)
 replset_1_ports = range(5000, 5002 + 1)
-replset_0_ports = [4000]
-replset_1_ports = []
 all_ports = replset_0_ports + replset_1_ports
 
 
