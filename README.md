@@ -1,7 +1,7 @@
 Real-time Profiling a MongoDB Cluster
 =====================================
 
-In a sharded cluster of replica sets, which server or servers handle each of your queries? What about each insert, update, or command? How these operations are routed is influenced by your shard key, the type of operation, and your read preference. It'd be great if we could **see** where each operation goes. We could experiment with queries to refine our understanding of how MongoDB scales.
+In a sharded cluster of replica sets, which server or servers handle each of your queries? What about each insert, update, or command? How these operations are routed is influenced by your choice of shard key, the type of operation, and your read preference. It'd be great if we could **see** where each operation goes. We could experiment with queries to refine our understanding of how MongoDB scales.
 
 Let's set up a cluster and use the system profiler to watch its behavior. This is an interactive, experimental way of learning how your cluster really behaves.
 
@@ -9,7 +9,7 @@ Let's set up a cluster and use the system profiler to watch its behavior. This i
 
 # Setup
 
-You'll need a recent install of MongoDB (I'm using 2.4.4), Python, a recent version of PyMongo (at least 2.4--I'm using 2.5.2) and the code in [my cluster-profile repository on GitHub](https://github.com/ajdavis/cluster-profile). If you install the [Colorama](https://pypi.python.org/pypi/colorama) Python package we'll get cute colored output. These scripts were tested on my Mac.
+You'll need a recent install of MongoDB (I'm using 2.4.4), Python, a recent version of [PyMongo](https://pypi.python.org/pypi/pymongo/) (at least 2.4&mdash;I'm using 2.5.2) and the code in [my cluster-profile repository on GitHub](https://github.com/ajdavis/cluster-profile). If you install the [Colorama](https://pypi.python.org/pypi/colorama) Python package we'll get cute colored output. These scripts were tested on my Mac.
 
 ## Sharded cluster of replica sets
 
@@ -47,7 +47,7 @@ The setup script also inserts a document with a `shard_key` of 0 and another wit
 
 ## Profiling
 
-Run the `tail_profile.py` script from my repository. It connects to all the replica set members and sets the profiling level to 2 ("log everything") on the `test` database, and creates a [tailable cursor](http://docs.mongodb.org/manual/tutorial/create-tailable-cursor/) on the `system.profile` collection. The script filters out some noise in the profile collection--for example, the activities of the tailable cursor show up in the `system.profile` collection that it's tailing. Any legitimate entries in the profile are spat out to the console in pretty colors.
+Run the `tail_profile.py` script from my repository. It connects to all the replica set members and sets the profiling level to 2 ("log everything") on the `test` database, and creates a [tailable cursor](http://docs.mongodb.org/manual/tutorial/create-tailable-cursor/) on the `system.profile` collection. The script filters out some noise in the profile collection&mdash;for example, the activities of the tailable cursor show up in the `system.profile` collection that it's tailing. Any legitimate entries in the profile are spat out to the console in pretty colors.
 
 # Experiments
 
