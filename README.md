@@ -145,4 +145,4 @@ Whereas `findAndModify`, since it modifies data, is run on the primaries no matt
 
 # Conclusion, Further Steps
 
-To scale a sharded cluster, it helps to understand how operations are distributed: are they scatter-gather, or targeted to one shard? Do they run on primaries or secondaries? If you set up a cluster and test your queries interactively like we did here, you can see how your cluster behaves in practice.
+To scale a sharded cluster, it helps to understand how operations are distributed: are they scatter-gather, or targeted to one shard? Do they run on primaries or secondaries? If you set up a cluster and test your queries interactively like we did here, you can see how your cluster behaves in practice. When you're designing your schema, shard keys, and read preferences, gaining this understanding early will guide you to scalable solutions.
