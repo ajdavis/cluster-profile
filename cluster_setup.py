@@ -42,7 +42,7 @@ def setup_replica_sets():
             logpath = os.path.join(directory, 'log')
             command = (
                 'mongod --dbpath %s --logpath %s --port %d --nohttpinterface'
-                ' --fork --replSet %s'
+                ' --fork --setParameter textSearchEnabled=true --replSet %s'
                 % (directory, logpath, port, replset_name))
 
             print(command)
@@ -95,7 +95,7 @@ def setup_config_servers():
         logpath = os.path.join(directory, 'log')
         command = (
             'mongod --dbpath %s --logpath %s --port %d --nohttpinterface'
-            ' --fork --configsvr'
+            ' --fork --setParameter textSearchEnabled=true --configsvr'
             % (directory, logpath, port))
 
         print(command)
@@ -108,7 +108,11 @@ def start_mongos():
     config_dbs = ','.join([
         'localhost:%d' % port for port in config_ports])
 
-    command = ('mongos --configdb %s --fork --logpath mongos.log' % config_dbs)
+    command = (
+        'mongos --configdb %s'
+        ' --fork --setParameter textSearchEnabled=true --logpath mongos.log'
+        % config_dbs)
+
     print(command)
     assert 0 == os.system(command)
     sleep(1)
